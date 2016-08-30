@@ -1,0 +1,80 @@
+---
+title: "Untitled"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: columns
+    vertical_layout: fill
+---
+
+```{r setup, include=FALSE}
+library('flexdashboard')
+```
+
+
+```{r}
+library("rgdal")
+library("sp")
+library("raster")
+library("leaflet")
+library("dplyr")
+```
+
+```{r} 
+# Read limits of Sierra Nevada Protected Area
+myurl <- 'https://www.dropbox.com/s/phuz9yxyiow78dt/eennpp_ed50_30.zip?dl=0'
+# EPSG:23030
+
+# Idea based on http://thebiobucket.blogspot.com.es/2013/09/batch-downloading-zipped-shapefiles.html 
+wd <- getwd()
+td <- tempdir()
+setwd(td)
+
+temp <- tempfile(fileext = ".zip")
+download.file(myurl, temp)
+unzip(temp)
+
+shp <- dir(tempdir(), "*.shp$")
+
+enp <- readOGR(dsn=shp, layer= sub(".shp$", "", shp), encoding="UTF-8")
+unlink(dir(td))
+setwd(wd)
+
+enp_r <- spTransform(enp, CRS("+init=epsg:4326"))
+
+# Select 
+
+
+
+
+# Read distribution of *Q. pyreanica* 
+myurl <- 'https://rawgit.com/ajpelu/modis_iv/master/data_raw/geoinfo/quercus_pyrenaica_sn.zip'
+
+
+
+qp <- readOGR(dsn=shp, layer = sub(".shp$", "", shp), verbose = FALSE, encoding="UTF-8")
+
+qp_rep <- spTransform(qp, CRS("+init=epsg:4326"))
+
+```
+
+Column {data-width=650}
+-----------------------------------------------------------------------
+
+### Chart A
+
+
+Column {data-width=350}
+-----------------------------------------------------------------------
+
+### Chart B
+
+```{r}
+
+```
+
+### Chart C
+
+```{r}
+
+```
+
