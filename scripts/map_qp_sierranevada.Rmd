@@ -41,7 +41,41 @@ setwd(wd)
 
 enp_r <- spTransform(enp, CRS("+init=epsg:4326"))
 
-# Select 
+# Select Sierra Nevada 
+sn <- subset(enp_r, NOMBRE == 'SIERRA NEVADA' & FIGURA == 'Espacio Natural')
+sn_natp <- subset(enp_r, NOMBRE == 'SIERRA NEVADA' & FIGURA == 'Parque Nacional')
+
+
+
+# Read Pyrenean Oak forests of Sierra Nevada
+myurl <- 'https://www.dropbox.com/s/phuz9yxyiow78dt/eennpp_ed50_30.zip?dl=0'
+# EPSG:23030
+
+# Idea based on http://thebiobucket.blogspot.com.es/2013/09/batch-downloading-zipped-shapefiles.html 
+wd <- getwd()
+td <- tempdir()
+setwd(td)
+
+temp <- tempfile(fileext = ".zip")
+download.file(myurl, temp)
+unzip(temp)
+
+shp <- dir(tempdir(), "*.shp$")
+
+enp <- readOGR(dsn=shp, layer= sub(".shp$", "", shp), encoding="UTF-8")
+unlink(dir(td))
+setwd(wd)
+
+enp_r <- spTransform(enp, CRS("+init=epsg:4326"))
+
+# Select Sierra Nevada 
+sn <- subset(enp_r, NOMBRE == 'SIERRA NEVADA' & FIGURA == 'Espacio Natural')
+sn_natp <- subset(enp_r, NOMBRE == 'SIERRA NEVADA' & FIGURA == 'Parque Nacional')
+
+
+
+
+
 
 
 
@@ -69,6 +103,36 @@ Column {data-width=350}
 ### Chart B
 
 ```{r}
+m <- leaflet() %>% 
+  addTiles(urlTemplate = "http://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png",
+           attribution = '<a href="https://carto.com/attributions">CARTO</a>', 
+           group = 'Basemap') %>%
+  
+  addWMSTiles('http://www.ideandalucia.es/services/toporaster10/wms?',
+              layers = 'toporaster10',
+              options = WMSTileOptions(format = "image/png", transparent = FALSE),
+              attribution = '<a href="http://www.juntadeandalucia.es/institutodeestadisticaycartografia" target="_blank">Instituto de Estadística y Cartografía de Andalucía</a>',
+              group = 'Topographical') %>%
+
+  addProviderTiles("Esri.WorldImagery", group='Satellite') %>% 
+  addWMSTiles('http://www.juntadeandalucia.es/medioambiente/mapwms/REDIAM_SPOT_Andalucia_2005?',
+              layers = 'mosaico_spot_2005',
+              options = WMSTileOptions(format = "image/png", transparent = FALSE),
+              group = 'Spot') %>%
+
+  
+  
+  
+    # Layers control
+  addLayersControl(position = 'bottomright',
+                   baseGroups = c("Spot", "Basemap", "Topographical", "Satellite"),
+                   overlayGroups = c('Parque Natural', 'Parque Nacional'),
+                   options = layersControlOptions(collapsed = FALSE)) %>%
+  
+  addPolygons(data = sn_natp, fill=FALSE, group='Parque Nacional', color = 'red') %>% 
+  addPolygons(data = sn, fill=FALSE, group = 'Parque Natural', color = 'blue')
+              
+m
 
 ```
 
