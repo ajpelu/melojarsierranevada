@@ -1,5 +1,5 @@
 ---
-title: "Untitled"
+title: "Distribution map of Quercus pyrenaica forests in Sierra Nevada"
 output: 
   flexdashboard::flex_dashboard:
     orientation: columns
@@ -49,8 +49,7 @@ qp_r <- spTransform(qp, CRS("+init=epsg:4326"))
 
 Column 
 -----------------------------------------------------------------------
-
-### Distribution map of Quercus pyrenaica
+### 
 ```{r}
 # Identificador poblaciones
 popup_qp <- paste0("<strong>Name:</strong> ", qp_r$LOCALIDAD,
