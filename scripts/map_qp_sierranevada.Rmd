@@ -19,46 +19,21 @@ library("leaflet")
 library("dplyr")
 ```
 
+```{r}
+machine <- '/Users/ajpelu'
+# machine <- 'Users/ajpeluLap'
+```
+
+
 ```{r} 
 ### --- Read limits of Sierra Nevada Protected area
-myurl <- 'https://www.dropbox.com/s/phuz9yxyiow78dt/eennpp_ed50_30.zip?dl=0'
-# EPSG:23030
+mydsn = paste0(machine, '/Dropbox/carto_public/EENNPP/InfGeografica/InfVectorial/Shapes/ED50_30')
+enp <- readOGR(dsn=mydsn, layer = 'EENNPP', encoding="UTF-8", verbose = FALSE)
 
-# Idea based on http://thebiobucket.blogspot.com.es/2013/09/batch-downloading-zipped-shapefiles.html 
-wd <- getwd()
-td <- tempdir()
-setwd(td)
-
-temp <- tempfile(fileext = ".zip")
-download.file(myurl, temp)
-unzip(temp)
-
-shp <- dir(tempdir(), "*.shp$")
-
-enp <- readOGR(dsn=shp, layer= sub(".shp$", "", shp), encoding="UTF-8")
-unlink(dir(td))
-file.remove(list.files(tempdir()))
-setwd(wd)
-### ---- 
 
 ### --- Read distribution of Q. pyrenaica forests
-myurl <- 'https://rawgit.com/ajpelu/modis_iv/master/data_raw/geoinfo/quercus_pyrenaica_sn.zip'
-
-# Idea based on http://thebiobucket.blogspot.com.es/2013/09/batch-downloading-zipped-shapefiles.html 
-wd <- getwd()
-td <- tempdir()
-setwd(td)
-
-temp <- tempfile(fileext = ".zip")
-download.file(myurl, temp)
-unzip(temp)
-
-shp <- dir(tempdir(), "*.shp$")
-
-qp <- readOGR(dsn=shp, layer= sub(".shp$", "", shp), encoding="UTF-8")
-unlink(dir(td))
-setwd(wd)
-### ----
+mydsn <- paste0(machine, '/Dropbox/carto_public/quer_pyr')
+qp <- readOGR(dsn=mydsn, layer='robledal_poblaciones', encoding="UTF-8", verbose = FALSE)
 
 ### Prepare Spatial data 
 # Sierra Nevada limits 
@@ -75,7 +50,7 @@ qp_r <- spTransform(qp, CRS("+init=epsg:4326"))
 Column 
 -----------------------------------------------------------------------
 
-### Map
+### Distribution map of Quercus pyrenaica
 ```{r}
 # Identificador poblaciones
 popup_qp <- paste0("<strong>Name:</strong> ", qp_r$LOCALIDAD,
@@ -117,5 +92,6 @@ m <- leaflet() %>%
                    baseGroups = c("Hillshade", "Satellite", "Topographical"),
                    overlayGroups = c('Natural Protected Area', 'Q. pyrenaica forests'),
                    options = layersControlOptions(collapsed = TRUE))
+m
 ```
 
