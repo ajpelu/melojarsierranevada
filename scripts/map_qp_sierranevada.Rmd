@@ -20,7 +20,7 @@ library("dplyr")
 ```
 
 ```{r} 
-# Read limits of Sierra Nevada Protected Area
+### --- Read limits of Sierra Nevada Protected area
 myurl <- 'https://www.dropbox.com/s/phuz9yxyiow78dt/eennpp_ed50_30.zip?dl=0'
 # EPSG:23030
 
@@ -37,77 +37,58 @@ shp <- dir(tempdir(), "*.shp$")
 
 enp <- readOGR(dsn=shp, layer= sub(".shp$", "", shp), encoding="UTF-8")
 unlink(dir(td))
+file.remove(list.files(tempdir()))
 setwd(wd)
+### ---- 
 
-enp_r <- spTransform(enp, CRS("+init=epsg:4326"))
-
-# Select Sierra Nevada 
-sn <- subset(enp_r, NOMBRE == 'SIERRA NEVADA' & FIGURA == 'Espacio Natural')
-sn_natp <- subset(enp_r, NOMBRE == 'SIERRA NEVADA' & FIGURA == 'Parque Nacional')
-
-
-
-# Read Pyrenean Oak forests of Sierra Nevada
-myurl <- 'https://www.dropbox.com/s/phuz9yxyiow78dt/eennpp_ed50_30.zip?dl=0'
-# EPSG:23030
-
-# Idea based on http://thebiobucket.blogspot.com.es/2013/09/batch-downloading-zipped-shapefiles.html 
-wd <- getwd()
-td <- tempdir()
-setwd(td)
-
-temp <- tempfile(fileext = ".zip")
-download.file(myurl, temp)
-unzip(temp)
-
-shp <- dir(tempdir(), "*.shp$")
-
-enp <- readOGR(dsn=shp, layer= sub(".shp$", "", shp), encoding="UTF-8")
-unlink(dir(td))
-setwd(wd)
-
-enp_r <- spTransform(enp, CRS("+init=epsg:4326"))
-
-# Select Sierra Nevada 
-sn <- subset(enp_r, NOMBRE == 'SIERRA NEVADA' & FIGURA == 'Espacio Natural')
-sn_natp <- subset(enp_r, NOMBRE == 'SIERRA NEVADA' & FIGURA == 'Parque Nacional')
-
-
-
-
-
-
-
-
-
-# Read distribution of *Q. pyreanica* 
+### --- Read distribution of Q. pyrenaica forests
 myurl <- 'https://rawgit.com/ajpelu/modis_iv/master/data_raw/geoinfo/quercus_pyrenaica_sn.zip'
 
+# Idea based on http://thebiobucket.blogspot.com.es/2013/09/batch-downloading-zipped-shapefiles.html 
+wd <- getwd()
+td <- tempdir()
+setwd(td)
 
+temp <- tempfile(fileext = ".zip")
+download.file(myurl, temp)
+unzip(temp)
 
-qp <- readOGR(dsn=shp, layer = sub(".shp$", "", shp), verbose = FALSE, encoding="UTF-8")
+shp <- dir(tempdir(), "*.shp$")
 
-qp_rep <- spTransform(qp, CRS("+init=epsg:4326"))
+qp <- readOGR(dsn=shp, layer= sub(".shp$", "", shp), encoding="UTF-8")
+unlink(dir(td))
+setwd(wd)
+### ----
 
+### Prepare Spatial data 
+# Sierra Nevada limits 
+enp_r <- spTransform(enp, CRS("+init=epsg:4326"))
+
+# Select Sierra Nevada 
+sn <- subset(enp_r, NOMBRE == 'SIERRA NEVADA' & FIGURA == 'Espacio Natural')
+sn_nat <- subset(enp_r, NOMBRE == 'SIERRA NEVADA' & FIGURA == 'Parque Nacional')
+
+# Pyrenean forests 
+qp_r <- spTransform(qp, CRS("+init=epsg:4326"))
 ```
 
-Column {data-width=650}
+Column 
 -----------------------------------------------------------------------
 
 ### Chart A
-
-
-Column {data-width=350}
------------------------------------------------------------------------
-
-### Chart B
-
 ```{r}
+# Identificador poblaciones
+popup_qp <- paste0("<strong>Population id:</strong> ", qp_r$POBLACION,
+                   "<br><strong>Name:</strong> ", qp_r$LOCALIDAD,
+                   "<br><strong>Valley:</strong> ", qp_r$VALLE)
+
+# Extension capa robledales
+ext_qp <- extent(qp_r)
+
+
+# Map 
 m <- leaflet() %>% 
-  addTiles(urlTemplate = "http://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png",
-           attribution = '<a href="https://carto.com/attributions">CARTO</a>', 
-           group = 'Basemap') %>%
-  
+  # Basemaps
   addWMSTiles('http://www.ideandalucia.es/services/toporaster10/wms?',
               layers = 'toporaster10',
               options = WMSTileOptions(format = "image/png", transparent = FALSE),
@@ -115,24 +96,48 @@ m <- leaflet() %>%
               group = 'Topographical') %>%
 
   addProviderTiles("Esri.WorldImagery", group='Satellite') %>% 
-  addWMSTiles('http://www.juntadeandalucia.es/medioambiente/mapwms/REDIAM_SPOT_Andalucia_2005?',
-              layers = 'mosaico_spot_2005',
+  
+  addWMSTiles('http://www.ideandalucia.es/wms/mdt_2005?',
+              layers = 'Sombreado_10',
               options = WMSTileOptions(format = "image/png", transparent = FALSE),
-              group = 'Spot') %>%
+              attribution = '<a href="http://www.juntadeandalucia.es/institutodeestadisticaycartografia" target="_blank">Instituto de Estadística y Cartografía de Andalucía</a>',
+              group = 'Hillshade') %>% 
 
+  # Polygons 
+  # addPolygons(data = sn_nat, fill=FALSE, color = 'red', weight=0.8, 
+  #             group='National Park') %>% 
+  addPolygons(data = sn, fill=FALSE, color = 'blue',  weight=1.5, dashArray=c(5,5),
+              group = 'Natural Park') %>%
+  addPolygons(data = qp_r, fillColor = 'red', fillOpacity = 0.4, stroke = FALSE,
+              group= 'Q. pyrenaica forests', popup = popup_qp) %>% 
   
-  
-  
-    # Layers control
+  # Layers control
   addLayersControl(position = 'bottomright',
-                   baseGroups = c("Spot", "Basemap", "Topographical", "Satellite"),
-                   overlayGroups = c('Parque Natural', 'Parque Nacional'),
-                   options = layersControlOptions(collapsed = FALSE)) %>%
-  
-  addPolygons(data = sn_natp, fill=FALSE, group='Parque Nacional', color = 'red') %>% 
-  addPolygons(data = sn, fill=FALSE, group = 'Parque Natural', color = 'blue')
-              
+                   baseGroups = c("Hillshade", "Satellite", "Topographical"),
+                   overlayGroups = c('Q. pyrenaica forests','Natural Park','National Park'),
+                   options = layersControlOptions(collapsed = FALSE)) 
+
+m 
+
+# %>% 
+  # Legend
+  # addLegend(position = 'bottomleft',opacity = 0.4, 
+  #           colors = c('red'), 
+  #           labels = c('Monterosso-Corniglia (23/09)',
+  #                      'Corniglia-Vernazza (24/09)'),
+  #           title = 'Hikes Italy, Cinque Terre') %>%
+  #             
 m
+
+m <- leaflet() %>% addPolygons(data = qp_r, 
+              group= 'Melojar (Q. pyrenaica)', 
+              fillColor = 'red', fillOpacity = 0.4, stroke = FALSE,
+              popup = popup_qp)
+
+
+
+
+m %>% setView(lng = mean(ext_qp[1:2]), lat =mean(ext_qp[3:4]), zoom = 12) 
 
 ```
 
